@@ -1,0 +1,39 @@
+{
+    "author": "eric.pageron@free.fr",
+    "dependencies": {},
+    "keywords": [],
+    "name": "pilotwatch",
+    "pebble": {
+        "capabilities": [
+            ""
+        ],
+        "displayName": "PilotWatch",
+        "enableMultiJS": true,
+        "messageKeys": {},
+        "projectType": "native",
+        "resources": {
+            "media": [
+                {
+                    "file": "images/app_icon",
+                    "menuIcon": true,
+                    "name": "APP_ICON",
+                    "targetPlatforms": [
+                        "basalt",
+                        "chalk"
+                    ],
+                    "type": "bitmap"
+                }
+            ]
+        },
+        "sdkVersion": "3",
+        "targetPlatforms": [
+            "basalt",
+            "chalk"
+        ],
+        "uuid": "2b9ef2ca-4821-4c17-9184-2caa3247cb8e",
+        "watchapp": {
+            "watchface": false
+        }
+    },
+    "version": "1.0.0"
+}

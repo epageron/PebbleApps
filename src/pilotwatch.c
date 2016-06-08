@@ -1,4 +1,5 @@
 #include "helpers.h"
+#include "settings.h"
 
 static myTextLayer *tl_current_time;
 static myTextLayer *tl_leg_start_time;
@@ -27,10 +28,6 @@ static bool start_new_leg;
 static AppTimer *limit_timer;
 static AppTimer *leg_timer;
 
-const time_t FLIGHT_TIME_STEP = 10;       // In minutes
-const time_t LEG_TIME_STEP = 30;          // In seconds
-const time_t LEG_CONFIG_DURATION = 5;     // In seconds
-const time_t INITIAL_LEG_DURATION = 8 * 60; // In seconds
 const int LONG_CLICK_DELAY = 2000;        // In milliseconds
 
 #define THRESHOLD(x)  (2*x)/3                 // Used to compute thresholds for warning
@@ -107,7 +104,7 @@ static void print_estimated_leg_duration() {
     }
     text_layer_set_text(tl_leg_est_duration->tl_obj,tl_leg_est_duration->buffer);
     print_estimated_leg_end_time();
-    app_timer_reschedule(leg_timer, LEG_CONFIG_DURATION * 1000);
+    app_timer_reschedule(leg_timer, setting_values[PRM_LEG_CONFIG_DURATION] * 1000);
 }
 
 static void print_delta_leg_duration() {
@@ -177,7 +174,7 @@ static void waypoint_top() {
     estimated_leg_duration = -1;
     start_new_leg = false;
     b_leg_overlapsed = false;
-    leg_timer = app_timer_register(LEG_CONFIG_DURATION * 1000,leg_is_started,NULL);
+    leg_timer = app_timer_register(setting_values[PRM_LEG_CONFIG_DURATION] * 1000,leg_is_started,NULL);
     text_layer_set_text_color(tl_leg_act_duration->tl_obj,GColorWhite);
     text_layer_set_text(tl_leg_est_end_time->tl_obj, " ");
     resetTextLayer(tl_leg_est_duration);
@@ -219,7 +216,8 @@ static void end_flight() {
     flight_started = false;
     get_time(&end_time);
     print_time(tl_flight_max_time, &end_time);
-
+    waypoint_top();
+  
     if(time_limit_overlapsed) {
       text_layer_set_text_color(tl_current_time->tl_obj,GColorWhite);
       text_layer_set_text_color(tl_flight_max_time->tl_obj,GColorFolly);
@@ -240,26 +238,26 @@ static void end_flight() {
 }
 
 static void decrease_estimated_leg_duration() {
-    estimated_leg_duration -= LEG_TIME_STEP;
+    estimated_leg_duration -= setting_values[PRM_LEG_TIME_STEP];
     if(estimated_leg_duration < 0)
-      estimated_leg_duration = INITIAL_LEG_DURATION;
+      estimated_leg_duration = setting_values[PRM_INITIAL_LEG_DURATION];
     print_estimated_leg_duration();
 }
 
 static void increase_estimated_leg_duration() {
     if(estimated_leg_duration < 0)
-      estimated_leg_duration = INITIAL_LEG_DURATION;
-    estimated_leg_duration += LEG_TIME_STEP;
+      estimated_leg_duration = setting_values[PRM_INITIAL_LEG_DURATION];
+    estimated_leg_duration += setting_values[PRM_LEG_TIME_STEP];
     print_estimated_leg_duration();
 }
 
 static void decrease_time_limit() {
-    max_flight_duration -= FLIGHT_TIME_STEP * 60;
+    max_flight_duration -= setting_values[PRM_FLIGHT_TIME_STEP] * 60;
     print_flight_max_time();
 }
 
 static void increase_time_limit() {
-    max_flight_duration += FLIGHT_TIME_STEP * 60;
+    max_flight_duration += setting_values[PRM_FLIGHT_TIME_STEP] * 60;
     print_flight_max_time();
 }
 
@@ -267,6 +265,11 @@ static void long_click_up_btn(ClickRecognizerRef recognizer, void *context) {
   APP_LOG(APP_LOG_LEVEL_DEBUG,"Up button pressed long");
   init_flight();  
   vibes_double_pulse();
+}
+
+static void long_click_dw_btn(ClickRecognizerRef recognizer, void *context) {
+  APP_LOG(APP_LOG_LEVEL_DEBUG,"Down button pressed long");
+  edit_settings();  
 }
 
 static void single_click_up_btn(ClickRecognizerRef recognizer, void *context) {
@@ -324,6 +327,7 @@ static void click_config_provider(void *context) {
   window_single_click_subscribe(BUTTON_ID_SELECT, single_click_sel_btn);
   window_single_click_subscribe(BUTTON_ID_DOWN, single_click_dw_btn);
   window_long_click_subscribe(BUTTON_ID_UP, LONG_CLICK_DELAY, long_click_up_btn , NULL);
+  window_long_click_subscribe(BUTTON_ID_DOWN, LONG_CLICK_DELAY, long_click_dw_btn , NULL);
 }
 
 static void window_load(Window *window) {
@@ -365,6 +369,8 @@ static void window_unload(Window *window) {
 
 static void init(void) {
   APP_LOG(APP_LOG_LEVEL_DEBUG,"Init...");
+  init_settings();
+  read_settings();
   window = window_create();
   window_set_background_color(window, GColorBulgarianRose);
   window_set_window_handlers(window, (WindowHandlers) {
@@ -378,6 +384,7 @@ static void init(void) {
 
 static void deinit(void) {
   APP_LOG(APP_LOG_LEVEL_DEBUG,"Exit...");
+  release_settings();
   window_destroy(window);
 }
 
