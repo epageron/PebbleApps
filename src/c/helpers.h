@@ -8,7 +8,14 @@ typedef struct {
   size_t buffer_len;
   char *buffer;
   char *initial_str;
+  int  init_font_size;
+  int  current_font_size;
 } myTextLayer;
+
+typedef struct {
+  myTextLayer *big_digits;
+  myTextLayer *exp_digits;
+} myTimeLayer;
 
 typedef struct {
   SimpleMenuSection *menu_section;
@@ -17,13 +24,15 @@ typedef struct {
 } myMenuLayer;
 
 extern void get_time(struct tm *t);
-extern void print_time(myTextLayer *mtl, struct tm *t);
-extern void print_duration(myTextLayer *mtl, int d, bool nosign);
-extern void init_text_buffer(myTextLayer *mtl, char *default_buf);
+extern void print_time(myTimeLayer *mtl, struct tm *t);
+extern void print_duration(myTimeLayer *mtl, int d, bool nosign);
 
-extern myTextLayer *addTextLayer(int align, int font_size, int y, GColor c, char *init_string);
-extern void resetTextLayer(myTextLayer *mtl);
-extern void destroyTextLayer(myTextLayer *mtl);
+extern myTimeLayer *addTimeLayer(int align, int font_size, int y, GColor c);
+extern void resetTimeLayer(myTimeLayer *mtl);
+extern void destroyTimeLayer(myTimeLayer *mtl);
+extern void changeFont(myTimeLayer *mtl, int font_size);
+extern void setTimeColor(myTimeLayer *mtl, GColor c);
+extern void setTextInTime(myTimeLayer *mtl, char *t);
 
 extern void stop_vibrate();
 extern void vibrate(bool long_vibe);

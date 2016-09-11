@@ -4,20 +4,77 @@
     "keywords": [],
     "name": "pilotwatch",
     "pebble": {
-        "capabilities": [
-            ""
-        ],
         "displayName": "PilotWatch",
         "enableMultiJS": true,
-        "messageKeys": {},
+        "messageKeys": [],
         "projectType": "native",
         "resources": {
             "media": [
+                {
+                    "characterRegex": "[0-9:A-Z\\-\\+<> ]",
+                    "file": "fonts/AntonioM.ttf",
+                    "name": "FONT_XXS_10",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk"
+                    ],
+                    "type": "font"
+                },
+                {
+                    "characterRegex": "[0-9:A-Z\\-\\+<> ]",
+                    "compatibility": "2.7",
+                    "file": "fonts/VoltaireS.ttf",
+                    "name": "FONT_SMALL_18",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk"
+                    ],
+                    "type": "font"
+                },
+                {
+                    "characterRegex": "[0-9:A-Z\\-\\+<> ]",
+                    "file": "fonts/VoltaireM.ttf",
+                    "name": "FONT_MEDIUM_22",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk"
+                    ],
+                    "trackingAdjust": -1,
+                    "type": "font"
+                },
+                {
+                    "characterRegex": "[0-9:A-Z\\-\\+<> ]",
+                    "compatibility": "2.7",
+                    "file": "fonts/VoltaireB.ttf",
+                    "name": "FONT_BIG_28",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk"
+                    ],
+                    "trackingAdjust": -1,
+                    "type": "font"
+                },
+                {
+                    "characterRegex": "[0-9:A-Z\\-\\+<> ]",
+                    "file": "fonts/VoltaireXS.ttf",
+                    "name": "FONT_SMALL_14",
+                    "targetPlatforms": [
+                        "aplite",
+                        "basalt",
+                        "chalk"
+                    ],
+                    "type": "font"
+                },
                 {
                     "file": "images/app_icon",
                     "menuIcon": true,
                     "name": "APP_ICON",
                     "targetPlatforms": [
+                        "aplite",
                         "basalt",
                         "chalk"
                     ],
@@ -27,6 +84,7 @@
         },
         "sdkVersion": "3",
         "targetPlatforms": [
+            "aplite",
             "basalt",
             "chalk"
         ],
@@ -35,5 +93,5 @@
             "watchface": false
         }
     },
-    "version": "1.0.0"
+    "version": "2.0.0"
 }

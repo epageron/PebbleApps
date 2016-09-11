@@ -10,12 +10,40 @@ void get_time(struct tm *t) {
     memcpy(t,localtime(&temp),sizeof(struct tm));
 }
 
-void print_time(myTextLayer *mtl, struct tm *t) {
-  strftime(mtl->buffer,mtl->buffer_len,"%T",t);
-  text_layer_set_text(mtl->tl_obj,mtl->buffer);
+void hide_seconds(myTimeLayer *mtl) {
+  Layer *l = text_layer_get_layer(mtl->exp_digits->tl_obj);
+  if(!layer_get_hidden(l)) {
+    layer_set_hidden(l,true);
+    
+    l = text_layer_get_layer(mtl->big_digits->tl_obj);
+    GRect bounds = layer_get_frame(l);
+    bounds.origin.x += bounds.size.w / 4;
+    layer_set_frame(l,bounds);
+    }
 }
 
-void print_duration(myTextLayer *mtl, int d, bool nosign) {
+void show_seconds(myTimeLayer *mtl) {
+  
+  Layer *l = text_layer_get_layer(mtl->exp_digits->tl_obj);
+  if(layer_get_hidden(l)) {
+    layer_set_hidden(l,false);
+    
+    l = text_layer_get_layer(mtl->big_digits->tl_obj);
+    GRect bounds = layer_get_frame(l);
+    bounds.origin.x -= bounds.size.w / 4;
+    layer_set_frame(l,bounds);
+  }
+}
+
+void print_time(myTimeLayer *mtl, struct tm *t) {
+  strftime(mtl->big_digits->buffer,mtl->big_digits->buffer_len,"%H:%M",t);
+  text_layer_set_text(mtl->big_digits->tl_obj,mtl->big_digits->buffer);
+  strftime(mtl->exp_digits->buffer,mtl->exp_digits->buffer_len,"%S",t);
+  text_layer_set_text(mtl->exp_digits->tl_obj,mtl->exp_digits->buffer);
+  show_seconds(mtl);
+}
+
+void print_duration(myTimeLayer *mtl, int d, bool nosign) {
     char sign[] = "+";
 
     if(nosign) {
@@ -32,11 +60,16 @@ void print_duration(myTextLayer *mtl, int d, bool nosign) {
     int d_hrs = d / 3600;
 
     if(d_hrs==0) {
-      snprintf(mtl->buffer,mtl->buffer_len,"%s%02d:%02d",sign,d_min,d_sec);
+      snprintf(mtl->big_digits->buffer,mtl->big_digits->buffer_len,"%s%02d:%02d",sign,d_min,d_sec);
+      text_layer_set_text(mtl->big_digits->tl_obj,mtl->big_digits->buffer);
+      hide_seconds(mtl);
     } else {
-      snprintf(mtl->buffer,mtl->buffer_len,"%s%02d:%02d:%02d",sign,d_hrs,d_min,d_sec);
+      snprintf(mtl->big_digits->buffer,mtl->big_digits->buffer_len,"%s%02d:%02d",sign,d_hrs,d_min);
+      snprintf(mtl->exp_digits->buffer,mtl->exp_digits->buffer_len,"%02d",d_sec);
+      text_layer_set_text(mtl->big_digits->tl_obj,mtl->big_digits->buffer);
+      text_layer_set_text(mtl->exp_digits->tl_obj,mtl->exp_digits->buffer);
+      show_seconds(mtl);
     }
-    text_layer_set_text(mtl->tl_obj,mtl->buffer);
 }
 
 void init_text_buffer(myTextLayer *mtl, char *default_buf)
@@ -50,41 +83,74 @@ void init_text_buffer(myTextLayer *mtl, char *default_buf)
     text_layer_set_text(mtl->tl_obj,default_buf);
 }
 
-myTextLayer *addTextLayer(int align, int font_size, int y, GColor c, char *init_string) {
+void changeTextFont(myTextLayer *mtl, int font_size) {
+  int font_height;
+  int font_id;
+  int delta_y = 0;
+  
+  if(font_size==-1) {
+    font_height = 10;
+    font_id = RESOURCE_ID_FONT_XXS_10;
+  }
+  if(font_size==0) {
+    font_height = 15;
+    font_id = RESOURCE_ID_FONT_SMALL_14;
+  }
+  if(font_size==1) {
+    font_height = 20;
+    font_id = RESOURCE_ID_FONT_SMALL_18;
+  }
+  if(font_size==2) {
+    font_height = 30;
+    font_id = RESOURCE_ID_FONT_MEDIUM_22;
+  }
+  if(font_size==3) {
+    font_height = 35;
+    font_id = RESOURCE_ID_FONT_BIG_28;
+  }
+  if(font_size!=mtl->current_font_size) {
+    delta_y = 2*(font_size - mtl->current_font_size);
+  }
+  
+  mtl->current_font_size = font_size;
+  Layer *l = text_layer_get_layer(mtl->tl_obj);
+  GRect bounds = layer_get_frame(l);
+  bounds.size.h = font_height;
+  bounds.origin.y -= delta_y;
+  layer_set_frame(l,bounds);
+  text_layer_set_font(mtl->tl_obj, fonts_load_custom_font(resource_get_handle(font_id)));
+}
+
+void changeFont(myTimeLayer *mtl, int font_size) {
+  
+  if(font_size==1) {
+    changeTextFont(mtl->big_digits,1);
+    changeTextFont(mtl->exp_digits,-1);
+  }
+  if(font_size==2) {
+    changeTextFont(mtl->big_digits,2);
+    changeTextFont(mtl->exp_digits,0);
+  }
+  if(font_size==3) {
+    changeTextFont(mtl->big_digits,3);
+    changeTextFont(mtl->exp_digits,1);
+  }
+}
+
+myTextLayer *addTextLayer(GRect bounds, GTextAlignment a, int font_size, int y, GColor c, char *init_string) {
   myTextLayer *mtl;
   
   mtl = (myTextLayer *)malloc(sizeof(myTextLayer));
   
   Layer *window_layer = window_get_root_layer(window);
-  GRect bounds = layer_get_bounds(window_layer);
-  int font_height;
-  const char *font_name;
-  
-  if(font_size==1) {
-    font_height = 20;
-    font_name = FONT_KEY_GOTHIC_18;
-  }
-  if(font_size==2) {
-    font_height = 30;
-    font_name = FONT_KEY_GOTHIC_24;
-  }
-  if(font_size==3) {
-    font_height = 35;
-    font_name = FONT_KEY_GOTHIC_28_BOLD;
-  }
-  if(align==0) {
-    mtl->tl_obj = text_layer_create(GRect(0, y, bounds.size.w, font_height));
-  }
-  if(align==1){
-    mtl->tl_obj = text_layer_create(GRect(0, y, bounds.size.w/2, font_height));
-  }
-  if(align==2){
-    mtl->tl_obj = text_layer_create(GRect(bounds.size.w/2, y, bounds.size.w/2, font_height));
-  }
-  text_layer_set_text_alignment(mtl->tl_obj, GTextAlignmentCenter);
+
+  mtl->current_font_size = font_size;
+  mtl->init_font_size = font_size;
+  mtl->tl_obj = text_layer_create(bounds);
+  text_layer_set_text_alignment(mtl->tl_obj, a);
   text_layer_set_background_color(mtl->tl_obj, GColorClear);
   text_layer_set_text_color(mtl->tl_obj,c);
-  text_layer_set_font(mtl->tl_obj, fonts_get_system_font(font_name));
+  changeTextFont(mtl, font_size);
   layer_add_child(window_layer, text_layer_get_layer(mtl->tl_obj));
   init_text_buffer(mtl,init_string);
   
@@ -93,6 +159,7 @@ myTextLayer *addTextLayer(int align, int font_size, int y, GColor c, char *init_
 
 void resetTextLayer(myTextLayer *mtl) {
     strcpy(mtl->buffer,mtl->initial_str);
+    changeTextFont(mtl, mtl->init_font_size);
     text_layer_set_text(mtl->tl_obj,mtl->buffer);
 }
 
@@ -100,6 +167,62 @@ void destroyTextLayer(myTextLayer *mtl) {
   text_layer_destroy(mtl->tl_obj);
   free(mtl->buffer);
   free(mtl->initial_str);
+}
+
+myTimeLayer *addTimeLayer(int align, int font_size, int y, GColor c) {
+  
+  myTimeLayer *mtl;
+  
+  mtl = (myTimeLayer *)malloc(sizeof(myTimeLayer));  
+  Layer *window_layer = window_get_root_layer(window);
+  GRect bounds = layer_get_bounds(window_layer);
+  
+  int x1;
+  int x2;
+  int x3;
+  int col_size = (bounds.size.w) / 12;
+  switch(align) {
+  case 2:
+    x1 = 4 * col_size;
+    x2 = 10 * col_size;
+    x3 = 12 * col_size;
+    break;
+  case 1:
+    x1 = 0 * col_size;
+    x2 = 4 * col_size;
+    x3 = 6 * col_size;
+    break;
+  default:
+    x1 = 1 * col_size;
+    x2 = 7 * col_size;
+    x3 = 11 * col_size;
+    break;
+  }    
+  mtl->big_digits = addTextLayer(GRect(x1, y, x2-x1, 20),GTextAlignmentRight,font_size,y,c," --:-- ");
+  mtl->exp_digits = addTextLayer(GRect(x2, y, x3-x2, 10),GTextAlignmentLeft,font_size-2,y,c,"--");
+  setTimeColor(mtl,c);
+  return mtl;
+}
+
+void resetTimeLayer(myTimeLayer *mtl) {
+  resetTextLayer(mtl->exp_digits);
+  resetTextLayer(mtl->big_digits);
+}
+
+void destroyTimeLayer(myTimeLayer *mtl) {
+  destroyTextLayer(mtl->exp_digits);
+  destroyTextLayer(mtl->big_digits);
+}
+
+void setTextInTime(myTimeLayer *mtl, char *t) {
+  text_layer_set_text(mtl->big_digits->tl_obj, t); 
+  hide_seconds(mtl);
+}
+
+void setTimeColor(myTimeLayer *mtl, GColor c) {
+  c = COLOR_FALLBACK(c, GColorWhite);
+  text_layer_set_text_color(mtl->big_digits->tl_obj,c);
+  text_layer_set_text_color(mtl->exp_digits->tl_obj,c);
 }
 
 void stop_vibrate() {
